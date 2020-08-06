@@ -8,7 +8,12 @@ server <- function(input, output) {
         
         switch(input$cbo_geo,
             
-            'PCU' = { textInput('xx1_pcu', 'Enter a valid postcode:', placeholder = 'Example: SW12 8AA') },
+            'PCU' = { 
+                tagList(
+                    textInput('xx1_pcu', 'Enter a valid postcode:', placeholder = 'Example: SW12 8AA'),
+                    tags$style('#xx1_pcu',"{background-color:#D6FFDE;}")
+                )
+            },
             
             { pickerInput('xx1_rgn', 'REGION:', levels(dts$RGN), 'London') }
                
@@ -25,7 +30,11 @@ server <- function(input, output) {
             { 
                 if(is.null(input$xx1_rgn)) return(NULL)
                 y <- droplevels(dts[RGN == input$xx1_rgn, get(input$cbo_geo)])
-                pickerInput('xx2_lcn', paste0(toupper(names(which(lcn.tpe == input$cbo_geo))), ':'), levels(y)) 
+                pickerInput('xx2_lcn', 
+                            paste0(toupper(names(which(lcn.tpe == input$cbo_geo))), ':'), 
+                            levels(y),
+                            options = list(`live-search` = TRUE, size = 12)
+                ) 
             }
                
         )
@@ -74,8 +83,11 @@ server <- function(input, output) {
         mp %>%
             fitBounds(yb[1, 1], yb[2, 1], yb[1, 2], yb[2, 2]) %>%
             addMarkers(
-                data = yd,
+                data = yd, 
                 lng = ~x_lon, lat = ~y_lat,
+                icon = ~markers[is_chain],
+                markerOptions(riseOnHover = TRUE),
+                clusterOptions = markerClusterOptions(),
                 label = lapply(
                     1:nrow(yd),
                     function(x)
@@ -85,25 +97,44 @@ server <- function(input, output) {
                                     yd[x, postcode], '<br>',
                                     yd[x, WARD], ', ', yd[x, PCT]
                         ))
+                ),
+                labelOptions = lbl.options,
+                popup = lapply(
+                    1:nrow(yd),
+                    function(x)
+                        HTML(paste0('<p style="font-weight:bold;font-size:14px;">
+                                    <a href="http://www.google.co.uk/search?q=', 
+                                    yd[x, name], '+', yd[x, address], '+', yd[x, postcode], '+', yd[x, WARD],
+                                    '" target="_blank">', 
+                                    yd[x, name], '</a></p>'
+                        ))
                 )
+                
             )
+        
+    })
+    
+    output$out_txt <- renderText({
+        
+        ifelse(is.null(dt()$coords), 'The text you entered is not a postcode or postcode not found', '')
         
     })
     
     output$out_tbl <- renderDT({
         
+        if(is.null(dt()$coords)) return(NULL)
+
         datatable( 
             dt()$data[, .(name, address, postcode, Ward = WARD, Town = PCT)],
             rownames = NULL, 
             selection = 'none',
             class = 'stripe nowrap hover compact row-border',
-            extensions = c('Buttons', 'FixedColumns', 'Scroller'),
+            extensions = c('Buttons', 'Scroller'),
             options = list(
                 scrollX = TRUE,
-                scrollY = 600,
+                scrollY = 500,
                 scroller = TRUE,
                 buttons = c('copy', 'csv', 'print'),
-                fixedColumns = list(leftColumns = 1),
                 ordering = TRUE,
                 deferRender = TRUE,
                 dom = 'Biftp'
@@ -112,5 +143,4 @@ server <- function(input, output) {
         
     })
 
-    
 }
