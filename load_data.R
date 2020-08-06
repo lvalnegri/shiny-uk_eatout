@@ -33,12 +33,19 @@ for(t in cols) y <- add_loca_name(y, t, FALSE)
 y[, c('town', 'county') := NULL]
 #===
 pc <- read_fst(file.path(geouk_path, 'postcodes'), columns = c('postcode', 'x_lon', 'y_lat'), as.data.table = TRUE)
-y <- pc[y, on = 'postcode']
+y <- pc[y, on = 'postcode'][order(postcode)]
+y[, npc := 1:.N, postcode][, overlaps := 0]
+y[npc %% 2 == 0, overlaps := npc / 2 ]
+y[npc > 1 & npc %% 2 > 0, overlaps := -(npc - 1) / 2 ]
+y[, `:=`( x_lon = x_lon + overlaps * 0.00001, y_lat = y_lat + overlaps * 0.00002 )][, c('npc', 'overlaps') := NULL]
 #===
 setcolorder(y, c('name', 'address'))
 
-y[, is_chain := 'green']
-txt <- c('burger king', 'kfc', 'mcdonald')
+y[, is_chain := 'blue']
+txt <- c(
+    'burger king', 'burgerking', 'costa coffee', 'kfc', 'mcdonald', 'mc donalds', 
+    'papa johns', 'starbucks', 'subway', 'taco bell'
+)
 for(tx in txt) y[grepl(tx, tolower(name)), is_chain := 'red']
 
 write_fst(y, file.path(app_path, 'uk_eatout', 'dataset'))
