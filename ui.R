@@ -18,7 +18,10 @@ fluidPage(
 
             tags$br(),
             column(12, actionButton('btn_go', 'FIND RESTAURANTS'), align = "center", style = "margin-bottom:30px;margin-top:-10px;"), 
-            HTML('<p>Source: <a href="https://github.com/hmrc/eat-out-to-help-out-establishments" target="_blank">HMRC</a></p>'),
+            HTML(
+                '<p>Data: <a href="https://github.com/hmrc/eat-out-to-help-out-establishments" target="_blank">HMRC</a></p>',
+                '<p>Code: <a href="https://github.com/lvalnegri/shiny-uk_eatout" target="_blank">GitHub</a></p>'
+            ),
 
             width = 3
 
