@@ -1,3 +1,9 @@
+######################################
+# Shiny App * UK Eat Out - Load Data #
+######################################
+# this script should be run as a cronjob on August only at 5PM:
+# 0 12-18 * 8 * Rscript --no-save --no-restore --verbose /home/datamaps/shiny/shiny-uk_eatout/load_data.R > out.Rout 2 > /home/datamaps/cronjobs/uk_eatout.out
+
 pkgs <- c('popiFun', 'data.table', 'fst')
 lapply(pkgs, require, char = TRUE)
 
@@ -37,14 +43,14 @@ y <- pc[y, on = 'postcode'][order(postcode)]
 y[, npc := 1:.N, postcode][, overlaps := 0]
 y[npc %% 2 == 0, overlaps := npc / 2 ]
 y[npc > 1 & npc %% 2 > 0, overlaps := -(npc - 1) / 2 ]
-y[, `:=`( x_lon = x_lon + overlaps * 0.00001, y_lat = y_lat + overlaps * 0.00002 )][, c('npc', 'overlaps') := NULL]
+y[, `:=`( x_lon = x_lon + overlaps * 0.00005, y_lat = y_lat + overlaps * 0.00005 )][, c('npc', 'overlaps') := NULL]
 #===
 setcolorder(y, c('name', 'address'))
 
 y[, is_chain := 'blue']
 txt <- c(
-    'burger king', 'burgerking', 'costa coffee', 'kfc', 'mcdonald', 'mc donalds', 
-    'papa johns', 'starbucks', 'subway', 'taco bell'
+    'burger ?king', 'costa coffee', 'domino', '^gusto italian$', 'kfc', 'm.?c.?donald', 
+    'papa johns', '^pret.*manger$', 'starbucks', 'subway', 'taco bell', 'wasabi'
 )
 for(tx in txt) y[grepl(tx, tolower(name)), is_chain := 'red']
 
