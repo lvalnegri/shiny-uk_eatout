@@ -25,7 +25,7 @@ server <- function(input, output) {
         
         switch(input$cbo_geo,
             
-            'PCU' = { sliderInput('xx2_pcu', 'Distance (miles):', min = 0.2, max = 2, value = 0.6, step = 0.2) },
+            'PCU' = { sliderInput('xx2_pcu', 'Distance (miles):', min = 0.2, max = 3, value = 0.6, step = 0.2) },
                
             { 
                 if(is.null(input$xx1_rgn)) return(NULL)
@@ -87,7 +87,6 @@ server <- function(input, output) {
                 lng = ~x_lon, lat = ~y_lat,
                 icon = ~markers[is_chain],
                 markerOptions(riseOnHover = TRUE),
-                clusterOptions = markerClusterOptions(),
                 label = lapply(
                     1:nrow(yd),
                     function(x)
