@@ -73,6 +73,11 @@ server <- function(input, output) {
         
     })
     
+    output$ui_nrs <- renderText({
+        if(is.null(dt())) return(NULL)
+        HTML(paste('<p>Your query returned', formatC(nrow(dt()$data), big.mark = ','),'restaurants.</p>'))
+    })
+    
 
     output$out_map <- renderLeaflet({
         
