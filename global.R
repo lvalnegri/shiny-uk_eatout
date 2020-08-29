@@ -2,7 +2,7 @@
 # Shiny App * UK Eat Out - global.R #
 #####################################
 
-pkgs <- c('popiFun', 'Cairo', 'colourpicker', 'data.table', 'DT', 'fst', 'htmltools', 'leaflet', 'leaflet.extras', 'shiny', 'shinycssloaders', 'shinyWidgets')
+pkgs <- c('popiFun', 'Cairo', 'data.table', 'DT', 'fst', 'htmltools', 'leaflet', 'leaflet.extras', 'shiny', 'shinycssloaders', 'shinyWidgets')
 lapply(pkgs, require, char = TRUE)
 
 options(spinner.color = '#e5001a', spinner.size = 1, spinner.type = 4)
@@ -10,10 +10,15 @@ options(bitmapType = 'cairo', shiny.usecairo = TRUE)
 
 dts <- read_fst(file.path(app_path, 'uk_eatout', 'dataset'), as.data.table = TRUE)
 pc <- read_fst(file.path(geouk_path, 'postcodes'), columns = c('postcode', 'x_lon', 'y_lat'), as.data.table = TRUE)
+bnd <- readRDS(file.path(app_path, 'uk_eatout', 'boundaries'))
 
-lcn.tpe <- c(
-    'Postcode [Bounding Box]' = 'PCU', 'Postcode Sector ' = 'PCS', 'Postal Town' = 'PCT', 'Postcode District' = 'PCD',
-    'Ward' = 'WARD', 'Parish' = 'PAR'
+lcn.tpe <- c('Postcode [Bounding Box]' = 'PCU', 'Postcode Sector ' = 'PCS', 'Postcode District' = 'PCD', 'Postal Town' = 'PCT', 'Ward' = 'WARD')
+rgns.lst <- list(
+    'England' = c(
+        'East Midlands', 'East of England', 'London', 
+        'North East', 'North West', 'South East', 'South West', 'West Midlands', 'Yorkshire and The Humber'
+    ),
+    'Northern Ireland', 'Scotland', 'Wales' 
 )
 
 lbl.options <- labelOptions(
@@ -48,7 +53,7 @@ addLegendFixedCustom <- function(map, colors, labels, sizes = 20, opacity = 0.5,
 mp <- leaflet(options = leafletOptions(minZoom = 6)) %>% 
         setView(lat = 54.003419, lng = -2.547973, zoom = 6) %>% 
         enableTileCaching() %>%
-        addTiles(options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>% 
+#        addTiles(options = tileOptions(useCache = TRUE, crossOrigin = TRUE)) %>% 
         addSearchOSM() %>%
         addResetMapButton() %>%
         addFullscreenControl()
@@ -97,4 +102,6 @@ bounding_box <- function(lat, lon, dist, in.miles = TRUE) {
 
     dimnames(m) <- list(c("lng", "lat"), c("min", "max"))
     m
+    
 }
+

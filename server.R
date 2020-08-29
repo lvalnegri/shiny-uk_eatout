@@ -15,7 +15,7 @@ server <- function(input, output) {
                 )
             },
             
-            { pickerInput('xx1_rgn', 'REGION:', levels(dts$RGN), 'London') }
+            { pickerInput('xx1_rgn', 'REGION:', rgns.lst, 'London') }
                
         )
         
@@ -25,7 +25,7 @@ server <- function(input, output) {
         
         switch(input$cbo_geo,
             
-            'PCU' = { sliderInput('xx2_pcu', 'Distance (miles):', min = 0.2, max = 3, value = 0.6, step = 0.2) },
+            'PCU' = { sliderInput('xx2_pcu', 'Distance (miles):', min = 0.2, max = 2, value = 0.6, step = 0.2) },
                
             { 
                 if(is.null(input$xx1_rgn)) return(NULL)
@@ -48,13 +48,14 @@ server <- function(input, output) {
             
             'PCU' = {
                 yc <- clean_postcode(data.table(postcode = input$xx1_pcu))
-                if(is.na(yc)){
+                yc <- pc[postcode == yc$postcode]
+                if(nrow(yc) == 0){
                     list('coords' = NULL)
                 } else {
-                    yc <- pc[postcode == yc$postcode, .(x_lon, y_lat)]
                     yb <- bounding_box(yc$y_lat, yc$x_lon, as.numeric(input$xx2_pcu))
                     list(
-                        'coords' = yc,
+                        'postcode' = yc[, .(postcode)],
+                        'coords' = yc[, .(x_lon, y_lat)],
                         'box' = yb,
                         'data' = dts[ x_lon >= yb[1, 1] & x_lon <= yb[1, 2] & y_lat >= yb[2, 1] & y_lat <= yb[2, 2] ]
                     )
@@ -74,7 +75,7 @@ server <- function(input, output) {
     })
     
     output$ui_nrs <- renderText({
-        if(is.null(dt())) return(NULL)
+        if(is.null(dt()$coords)) return("The postcode you entered is invalid")
         HTML(paste('<p>Your query returned', formatC(nrow(dt()$data), big.mark = ','),'restaurants.</p>'))
     })
     
@@ -85,7 +86,24 @@ server <- function(input, output) {
         
         yd <- dt()$data
         yb <- dt()$box
-        mp %>%
+        mps <- mp
+        
+        if(input$cbo_geo == 'PCU'){
+            mps <- mps %>% 
+                addPulseMarkers(
+                    lng = dt()$coords$x_lon, 
+                    lat = dt()$coords$y_lat,
+                    label = input$xx1_pcu,
+                    icon = makePulseIcon(color = 'black', iconSize = 12, animate = TRUE, heartbeat = 2)
+                )
+        } else {
+            y <- subset(bnd[[input$cbo_geo]], bnd[[input$cbo_geo]]$id == lcn[type == input$cbo_geo & name == input$xx2_lcn, location_id])
+            mps <- mps %>%
+                addPolygons(data = y, color = 'black', weight = 4, opacity = 1, fillOpacity = 0)
+        }
+        
+                
+        mps <- mps %>%
             fitBounds(yb[1, 1], yb[2, 1], yb[1, 2], yb[2, 2]) %>%
             addMarkers(
                 data = yd, 
@@ -115,6 +133,8 @@ server <- function(input, output) {
                 )
                 
             )
+        
+        mps
         
     })
     

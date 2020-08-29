@@ -17,10 +17,16 @@ fluidPage(
             uiOutput('ui_2nd'),
 
             tags$br(),
-            column(12, actionButton('btn_go', 'FIND RESTAURANTS'), align = "center", style = "margin-bottom:30px;margin-top:-10px;"), 
+            column(12, 
+                actionButton('btn_go', 'FIND RESTAURANTS',
+                    icon = icon('search-location'),
+                    style = "color:#fff;background-color:#337ab7;border-color:#2e6da4;font-weight:600"
+                ),
+                align = 'center', style = "margin-bottom:30px;margin-top:-10px"
+            ), 
             
             uiOutput('ui_nrs'),
-            HTML(paste('<hr><p>The dataset contains', formatC(nrow(dts), big.mark = ','),'records.</p>')),
+            HTML(paste('<p></p><hr><p>The dataset contains', formatC(nrow(dts), big.mark = ','),'records.</p>')),
             HTML(
                 '<p>Data: <a href="https://github.com/hmrc/eat-out-to-help-out-establishments" target="_blank">HMRC</a></p>',
                 '<p>Code: <a href="https://github.com/lvalnegri/shiny-uk_eatout" target="_blank">GitHub</a></p>'

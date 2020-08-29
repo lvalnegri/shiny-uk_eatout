@@ -33,7 +33,7 @@ y <- capitalize(y, 'line 1')
 y <- capitalize(y, 'line 2')
 y[, address := paste0(trimws(`line 1`), ifelse(is.na(`line 2`), '', paste(',', trimws(`line 2`))))][is.na(`line 1`), address := NA]
 y[, `:=`(`line 1` = NULL, `line 2` = NULL )]
-cols <- c('PAR', 'WARD', 'PCS', 'PCD', 'PCT', 'RGN')
+cols <- c('WARD', 'PCS', 'PCD', 'PCT', 'RGN')
 y <- add_geocodes(y, add_oa = TRUE, census = FALSE, admin = FALSE, postal = FALSE, cols_in = cols)
 for(t in cols) y <- add_loca_name(y, t, FALSE)
 y[, c('town', 'county') := NULL]
@@ -55,6 +55,15 @@ txt <- c(
 for(tx in txt) y[grepl(tx, tolower(name)), is_chain := 'red']
 
 write_fst(y, file.path(app_path, 'uk_eatout', 'dataset'))
+
+#===
+# bnd <- list()
+# for(x in cols){
+#     y <- readRDS(file.path(bnduk_path, 'rds', 's05', x))
+#     bnd[[x]] <- y
+# }
+# saveRDS(bnd, file.path(app_path, 'uk_eatout', 'boundaries'))
+#===
 
 rm(list = ls())
 gc()
