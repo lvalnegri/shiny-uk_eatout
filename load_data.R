@@ -65,6 +65,20 @@ write_fst(y, file.path(app_path, 'uk_eatout', 'dataset'))
 # saveRDS(bnd, file.path(app_path, 'uk_eatout', 'boundaries'))
 #===
 
+#===
+# lcn <- read_fst(file.path(geouk_path, 'locations'), columns = c('type', 'location_id', 'name'), as.data.table = TRUE)
+# y <- data.table()
+# for(t in cols){ 
+#     y1 <- lcn[type == t]
+#     y2 <- read_fst(file.path(geouk_path, 'output_areas'), columns = c(t, 'RGN'), as.data.table = TRUE)
+#     setnames(y2, c('location_id', 'RGNc'))
+#     y <- rbindlist(list( y, unique(y2)[y1, on = 'location_id'] ))
+# }
+# rgn <- lcn[type == 'RGN', .(RGNc = location_id, RGN = name)]
+# y <- rgn[y, on = 'RGNc'][, RGNc := NULL]
+# write_fst(y, file.path(app_path, 'uk_eatout', 'locations'))
+#===
+
 rm(list = ls())
 gc()
 

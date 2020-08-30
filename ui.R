@@ -29,7 +29,13 @@ fluidPage(
             HTML(paste('<p></p><hr><p>The dataset contains', formatC(nrow(dts), big.mark = ','),'records.</p>')),
             HTML(
                 '<p>Data: <a href="https://github.com/hmrc/eat-out-to-help-out-establishments" target="_blank">HMRC</a></p>',
-                '<p>Code: <a href="https://github.com/lvalnegri/shiny-uk_eatout" target="_blank">GitHub</a></p>'
+                '<p>Code: <a href="https://github.com/lvalnegri/shiny-uk_eatout" target="_blank">GitHub</a></p><br>',
+                '<p>Contains <a href="http://geoportal.statistics.gov.uk/" target="_blank">OS data</a>
+                 <p> All content is available under the 
+                     <a href="http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank">
+                        Open Government Licence v3.0
+                     </a></p>
+                 <p> &copy; Crown copyright and database right [2020]</p>'
             ),
 
             width = 3

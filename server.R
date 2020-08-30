@@ -29,10 +29,13 @@ server <- function(input, output) {
                
             { 
                 if(is.null(input$xx1_rgn)) return(NULL)
-                y <- droplevels(dts[RGN == input$xx1_rgn, get(input$cbo_geo)])
+                y <- data.table(levels(droplevels(dts[RGN == input$xx1_rgn, get(input$cbo_geo)])))
+                setnames(y, 'X')
+                if(input$cbo_geo == 'PCD') y <- unique(pco[, .(X = PCD, ord_PCD)])[y, on = 'X'][order(ord_PCD)][, ord_PCD := NULL]
+                if(input$cbo_geo == 'PCS') y <- pco[, .(X = PCS, ord_PCS)][y, on = 'X'][order(ord_PCS)][, ord_PCS := NULL]
                 pickerInput('xx2_lcn', 
                             paste0(toupper(names(which(lcn.tpe == input$cbo_geo))), ':'), 
-                            levels(y),
+                            y$X,
                             options = list(`live-search` = TRUE, size = 12)
                 ) 
             }
@@ -44,65 +47,45 @@ server <- function(input, output) {
     
     dt <- eventReactive(input$btn_go, {
         
+        # FIND OBJECT ----
         switch(input$cbo_geo,
             
             'PCU' = {
+                if(nchar(input$xx1_pcu) <= 5) return(NULL)
                 yc <- clean_postcode(data.table(postcode = input$xx1_pcu))
                 yc <- pc[postcode == yc$postcode]
                 if(nrow(yc) == 0){
-                    list('coords' = NULL)
+                    return(NULL)
                 } else {
                     yb <- bounding_box(yc$y_lat, yc$x_lon, as.numeric(input$xx2_pcu))
-                    list(
-                        'postcode' = yc[, .(postcode)],
-                        'coords' = yc[, .(x_lon, y_lat)],
-                        'box' = yb,
-                        'data' = dts[ x_lon >= yb[1, 1] & x_lon <= yb[1, 2] & y_lat >= yb[2, 1] & y_lat <= yb[2, 2] ]
-                    )
+                    yd <- dts[ x_lon >= yb[1, 1] & x_lon <= yb[1, 2] & y_lat >= yb[2, 1] & y_lat <= yb[2, 2] ]
                 }
             },
             
             {
                 yd <- dts[RGN == input$xx1_rgn & get(input$cbo_geo) == input$xx2_lcn]
-                yb <- c(min(yd$x_lon), min(yd$y_lat), max(yd$x_lon), max(yd$y_lat))
-                dim(yb) <- c(2,2)
-                dimnames(yb) <- list(c('lng', 'lat'), c('min', 'max'))
-                list('coords' = data.table('x_lon' = mean(yb[1,]), 'y_lat' = mean(yb[2,])), 'box' = yb, 'data' = yd)
             }
                
         )
-        
-    })
-    
-    output$ui_nrs <- renderText({
-        if(is.null(dt()$coords)) return("The postcode you entered is invalid")
-        HTML(paste('<p>Your query returned', formatC(nrow(dt()$data), big.mark = ','),'restaurants.</p>'))
-    })
-    
 
-    output$out_map <- renderLeaflet({
-        
-        if(is.null(dt()$coords)) return(mp)
-        
-        yd <- dt()$data
-        yb <- dt()$box
-        mps <- mp
+        # CREATE MAP ----
         
         if(input$cbo_geo == 'PCU'){
-            mps <- mps %>% 
+            mps <- mp %>% 
                 addPulseMarkers(
-                    lng = dt()$coords$x_lon, 
-                    lat = dt()$coords$y_lat,
-                    label = input$xx1_pcu,
+                    lng = yc$x_lon, 
+                    lat = yc$y_lat,
+                    label = yc$postcode,
                     icon = makePulseIcon(color = 'black', iconSize = 12, animate = TRUE, heartbeat = 2)
                 )
         } else {
-            y <- subset(bnd[[input$cbo_geo]], bnd[[input$cbo_geo]]$id == lcn[type == input$cbo_geo & name == input$xx2_lcn, location_id])
-            mps <- mps %>%
-                addPolygons(data = y, color = 'black', weight = 4, opacity = 1, fillOpacity = 0)
+            y <- subset(bnd[[input$cbo_geo]], bnd[[input$cbo_geo]]$id == lcn[type == input$cbo_geo & RGN == input$xx1_rgn & name == input$xx2_lcn, location_id])
+                yb <- c(y@bbox[1, 1], y@bbox[2, 1], y@bbox[1, 2], y@bbox[2, 2])
+                dim(yb) <- c(2,2)
+                dimnames(yb) <- list(c('lng', 'lat'), c('min', 'max'))
+            mps <- mp %>% addPolygons(data = y, color = 'black', weight = 3, opacity = 0.8, fillColor = 'red', fillOpacity = 0.1)
         }
         
-                
         mps <- mps %>%
             fitBounds(yb[1, 1], yb[2, 1], yb[1, 2], yb[2, 2]) %>%
             addMarkers(
@@ -134,22 +117,9 @@ server <- function(input, output) {
                 
             )
         
-        mps
-        
-    })
-    
-    output$out_txt <- renderText({
-        
-        ifelse(is.null(dt()$coords), 'The text you entered is not a postcode or postcode not found', '')
-        
-    })
-    
-    output$out_tbl <- renderDT({
-        
-        if(is.null(dt()$coords)) return(NULL)
-
-        datatable( 
-            dt()$data[, .(name, address, postcode, Ward = WARD, Town = PCT)],
+        # CREATE TABLE ----
+        tbl <- datatable( 
+            yd[, .(name, address, postcode, Ward = WARD, Town = PCT)],
             rownames = NULL, 
             selection = 'none',
             class = 'stripe nowrap hover compact row-border',
@@ -165,6 +135,28 @@ server <- function(input, output) {
             )
         )
         
+        # RETURN ----
+        list('mps' = mps, 'tbl' = tbl, 'cnt' = nrow(yd))
+        
+    })
+    
+    output$ui_nrs <- renderText({
+        if(is.null(dt())) return("The postcode you entered is invalid")
+        HTML(paste('<p>Your query returned', formatC(dt()$cnt, big.mark = ','),'restaurants.</p>'))
+    })
+
+    output$out_map <- renderLeaflet({
+        if(is.null(dt())) return(mp)
+        dt()$mps
+    })
+    
+    output$out_txt <- renderText({
+        ifelse(is.null(dt()), 'The text you entered is not a postcode or postcode not found', '')
+    })
+    
+    output$out_tbl <- renderDT({
+        if(is.null(dt())) return(NULL)
+        dt()$tbl
     })
 
 }
