@@ -1,13 +1,13 @@
 ######################################
 # Shiny App * UK Eat Out - Load Data #
 ######################################
-# this script should be run as a cronjob on August only at 5PM:
+# this script should be run as a cronjob in August only:
 # 0 12-18 * 8 * Rscript --no-save --no-restore --verbose /home/datamaps/shiny/shiny-uk_eatout/load_data.R > out.Rout 2 > /home/datamaps/cronjobs/uk_eatout.out
 
 pkgs <- c('popiFun', 'data.table', 'fst')
 lapply(pkgs, require, char = TRUE)
 
-add_loca_name <- function(dt, geo, codes = TRUE, coords = FALSE){
+add_loca_name <- function(dt, geo, keep.codes = TRUE, coords = FALSE, saf = TRUE){
     yn <- names(dt)
     cols <- c('type', 'location_id', 'name')
     if(coords) cols <- c(cols, 'x_lon', 'y_lat')
@@ -16,8 +16,15 @@ add_loca_name <- function(dt, geo, codes = TRUE, coords = FALSE){
     cols <- c('id', geo)
     if(coords) cols <- c(cols,  paste0(geo, c('x', 'y')))
     setnames(y, cols)
-    dt <- y[dt, on = c(id = geo)][, id := NULL]
-    setcolorder(dt, yn)
+    dt <- y[dt, on = c(id = geo)]
+    if(keep.codes){
+        if(saf) dt[, id := factor(id)]
+        setnames(dt, c('id', geo), c(geo, paste0(geo, 'n')))
+        setcolorder(dt, c(yn[1:which(yn == geo)], paste0(geo, 'n'), yn[(which(yn == geo) + 1):length(yn)]))
+    } else {
+        dt[, id := NULL]
+        setnames(dt, geo, paste0(geo, 'n'))
+    }
     dt
 }
 
@@ -31,11 +38,14 @@ y[name == `line 1`, `:=`(`line 1` = `line 2`, `line 2` = NA )]
 y <- capitalize(y, 'name')
 y <- capitalize(y, 'line 1')
 y <- capitalize(y, 'line 2')
-y[, address := paste0(trimws(`line 1`), ifelse(is.na(`line 2`), '', paste(',', trimws(`line 2`))))][is.na(`line 1`), address := NA]
+y[, address := paste0(trimws(`line 1`), ifelse(is.na(`line 2`), '', paste(',', trimws(`line 2`))))][is.na(`line 1`), address := '']
 y[, `:=`(`line 1` = NULL, `line 2` = NULL )]
-cols <- c('WARD', 'PCS', 'PCD', 'PCT', 'RGN')
-y <- add_geocodes(y, add_oa = TRUE, census = FALSE, admin = FALSE, postal = FALSE, cols_in = cols)
-for(t in cols) y <- add_loca_name(y, t, FALSE)
+cols <- c('WARD', 'PAR', 'PCS', 'PCD')
+pc <- read_fst(file.path(geouk_path, 'postcodes'), columns = c('postcode', cols), as.data.table = TRUE)
+pc[y, on = 'postcode']
+
+cols <- c(cols, 'PCT')
+for(t in cols) y <- add_loca_name(y, t)
 y[, c('town', 'county') := NULL]
 #===
 pc <- read_fst(file.path(geouk_path, 'postcodes'), columns = c('postcode', 'x_lon', 'y_lat'), as.data.table = TRUE)
@@ -63,20 +73,6 @@ write_fst(y, file.path(app_path, 'uk_eatout', 'dataset'))
 #     bnd[[x]] <- y
 # }
 # saveRDS(bnd, file.path(app_path, 'uk_eatout', 'boundaries'))
-#===
-
-#===
-# lcn <- read_fst(file.path(geouk_path, 'locations'), columns = c('type', 'location_id', 'name'), as.data.table = TRUE)
-# y <- data.table()
-# for(t in cols){ 
-#     y1 <- lcn[type == t]
-#     y2 <- read_fst(file.path(geouk_path, 'output_areas'), columns = c(t, 'RGN'), as.data.table = TRUE)
-#     setnames(y2, c('location_id', 'RGNc'))
-#     y <- rbindlist(list( y, unique(y2)[y1, on = 'location_id'] ))
-# }
-# rgn <- lcn[type == 'RGN', .(RGNc = location_id, RGN = name)]
-# y <- rgn[y, on = 'RGNc'][, RGNc := NULL]
-# write_fst(y, file.path(app_path, 'uk_eatout', 'locations'))
 #===
 
 rm(list = ls())

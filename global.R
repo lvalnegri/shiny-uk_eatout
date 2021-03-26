@@ -7,14 +7,13 @@ lapply(pkgs, require, char = TRUE)
 
 options(spinner.color = '#e5001a', spinner.size = 1, spinner.type = 4)
 options(bitmapType = 'cairo', shiny.usecairo = TRUE)
+source('functions.R')
 
 dts <- read_fst(file.path(app_path, 'uk_eatout', 'dataset'), as.data.table = TRUE)
 pc <- read_fst(file.path(geouk_path, 'postcodes'), columns = c('postcode', 'x_lon', 'y_lat'), as.data.table = TRUE)
-bnd <- readRDS(file.path(app_path, 'uk_eatout', 'boundaries'))
-lcn <- read_fst(file.path(app_path, 'uk_eatout', 'locations'), as.data.table = TRUE)
 pco <- read_fst(file.path(geouk_path, 'PCD_PCS_ord'), as.data.table = TRUE)
     
-lcn.tpe <- c('Postcode [Bounding Box]' = 'PCU', 'Postcode Sector ' = 'PCS', 'Postcode District' = 'PCD', 'Postal Town' = 'PCT', 'Ward' = 'WARD')
+lcn.tpe <- c('Postcode [Bounding Box]' = 'PCU', 'Postcode Sector ' = 'PCS', 'Postcode District' = 'PCD', 'Post Town' = 'PCT', 'Ward' = 'WARD')
 rgns.lst <- list(
     'England' = c(
         'East Midlands', 'East of England', 'London', 
@@ -107,3 +106,11 @@ bounding_box <- function(lat, lon, dist, in.miles = TRUE) {
     
 }
 
+build_list_loca <- function(x, tpe, cname = NA){
+    yl <- read_fst_idx(file.path(geouk_path, 'locations'), tpe)
+    if(is.na(cname)) cname <- tpe
+    yl <- yl[x, on = c(location_id = cname)][, .(id = location_id, name)][order(name)]
+    y <- as.list(yl$id)
+    names(y) <- yl$name
+    y
+}

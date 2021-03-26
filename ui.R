@@ -26,16 +26,29 @@ fluidPage(
             ), 
             
             uiOutput('ui_nrs'),
-            HTML(paste('<p></p><hr><p>The dataset contains', formatC(nrow(dts), big.mark = ','),'records.</p>')),
+            HTML(paste('<hr><p>The dataset contains', formatC(nrow(dts), big.mark = ','),'records.</p>')),
             HTML(
-                '<p>Data: <a href="https://github.com/hmrc/eat-out-to-help-out-establishments" target="_blank">HMRC</a></p>',
-                '<p>Code: <a href="https://github.com/lvalnegri/shiny-uk_eatout" target="_blank">GitHub</a></p><br>',
-                '<p>Contains <a href="http://geoportal.statistics.gov.uk/" target="_blank">OS data</a>
-                 <p> All content is available under the 
-                     <a href="http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank">
+                '<p>Data: <a href="https://bit.ly/hmrc_eatout" target="_blank">HMRC</a></p>',
+                '<p>App Code: <a href="https://bit.ly/datamaps-uk_eatout_github" target="_blank">GitHub</a></p>
+                 <br>',
+                
+                '<p>Contains <a href="https://bit.ly/ONS_geoportal" target="_blank">OS</a>
+                    and <a href="https://bit.ly/royal_mail_paf" target="_blank">Royal Mail</a> data.</p>
+                 <p>All content is available under the 
+                    <a href="https://bit.ly/open_gov_licence_v3" target="_blank">
                         Open Government Licence v3.0
-                     </a></p>
-                 <p> &copy; Crown copyright and database right [2020]</p>'
+                    </a></p>
+                 <p>&copy; Crown copyright and database rights [2020]</p>
+                 <p>&copy; Royal Mail copyright and database rights [2020]</p>
+                 <br>',
+                
+                '<p>Postcode Sectors and Districts Polygons are only approximations of the real ones, here depicted as suitable unions of
+                    <a href="https://bit.ly/ons-output_areas" target="_blank">ONS Output Areas</a> 
+                    (see the <a href="https://bit.ly/datamaps-create_parent_boundaries" target="_blank">relevant code</a>).
+                    Hence some shop could fall outside the designated polygon (for more technical information, see FAQs in the <a href="https://bit.ly/onspd-user_guide" target="_blank">ONSPD User Guide</a>).</p>
+                 <br>',
+                
+                '<p>Post Towns have been built using <a href="https://bit.ly/wiki-postcode_areas" target="_blank">Wikipedia resources</a>, and are based on Postcode Districts.</p>'
             ),
 
             width = 3

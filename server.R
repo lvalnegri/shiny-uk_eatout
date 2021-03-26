@@ -27,18 +27,7 @@ server <- function(input, output) {
             
             'PCU' = { sliderInput('xx2_pcu', 'Distance (miles):', min = 0.2, max = 2, value = 0.6, step = 0.2) },
                
-            { 
-                if(is.null(input$xx1_rgn)) return(NULL)
-                y <- data.table(levels(droplevels(dts[RGN == input$xx1_rgn, get(input$cbo_geo)])))
-                setnames(y, 'X')
-                if(input$cbo_geo == 'PCD') y <- unique(pco[, .(X = PCD, ord_PCD)])[y, on = 'X'][order(ord_PCD)][, ord_PCD := NULL]
-                if(input$cbo_geo == 'PCS') y <- pco[, .(X = PCS, ord_PCS)][y, on = 'X'][order(ord_PCS)][, ord_PCS := NULL]
-                pickerInput('xx2_lcn', 
-                            paste0(toupper(names(which(lcn.tpe == input$cbo_geo))), ':'), 
-                            y$X,
-                            options = list(`live-search` = TRUE, size = 12)
-                ) 
-            }
+            { input_xx2_lcn(input$xx1_rgn, input$cbo_geo) }
                
         )
         
@@ -62,9 +51,7 @@ server <- function(input, output) {
                 }
             },
             
-            {
-                yd <- dts[RGN == input$xx1_rgn & get(input$cbo_geo) == input$xx2_lcn]
-            }
+            { yd <- dts[get(input$cbo_geo) == input$xx2_lcn] }
                
         )
 
@@ -79,10 +66,10 @@ server <- function(input, output) {
                     icon = makePulseIcon(color = 'black', iconSize = 12, animate = TRUE, heartbeat = 2)
                 )
         } else {
-            y <- subset(bnd[[input$cbo_geo]], bnd[[input$cbo_geo]]$id == lcn[type == input$cbo_geo & RGN == input$xx1_rgn & name == input$xx2_lcn, location_id])
-                yb <- c(y@bbox[1, 1], y@bbox[2, 1], y@bbox[1, 2], y@bbox[2, 2])
-                dim(yb) <- c(2,2)
-                dimnames(yb) <- list(c('lng', 'lat'), c('min', 'max'))
+            y <- readRDS(file.path(bnduk_path, 'postcodes', 'oa', input$xx2_lcn))
+            yb <- c(y@bbox[1, 1], y@bbox[2, 1], y@bbox[1, 2], y@bbox[2, 2])
+            dim(yb) <- c(2,2)
+            dimnames(yb) <- list(c('lng', 'lat'), c('min', 'max'))
             mps <- mp %>% addPolygons(data = y, color = 'black', weight = 3, opacity = 0.8, fillColor = 'red', fillOpacity = 0.1)
         }
         
@@ -100,7 +87,7 @@ server <- function(input, output) {
                                     yd[x, name], '</p>', 
                                     yd[x, address], '<br>', 
                                     yd[x, postcode], '<br>',
-                                    yd[x, WARD], ', ', yd[x, PCT]
+                                    yd[x, WARDn], ', ', yd[x, PCTn]
                         ))
                 ),
                 labelOptions = lbl.options,
@@ -109,7 +96,7 @@ server <- function(input, output) {
                     function(x)
                         HTML(paste0('<p style="font-weight:bold;font-size:14px;">
                                     <a href="http://www.google.co.uk/search?q=', 
-                                    yd[x, name], '+', yd[x, address], '+', yd[x, postcode], '+', yd[x, WARD],
+                                    yd[x, name], '+', yd[x, address], '+', yd[x, postcode], '+', yd[x, WARDn],
                                     '" target="_blank">', 
                                     yd[x, name], '</a></p>'
                         ))
@@ -119,7 +106,7 @@ server <- function(input, output) {
         
         # CREATE TABLE ----
         tbl <- datatable( 
-            yd[, .(name, address, postcode, Ward = WARD, Town = PCT)],
+            yd[, .(name, address, postcode, Ward = WARDn, Town = PCTn)],
             rownames = NULL, 
             selection = 'none',
             class = 'stripe nowrap hover compact row-border',
